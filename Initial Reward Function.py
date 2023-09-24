@@ -32,14 +32,13 @@ def reward_function(params):
     '''
     
     # Define Weightings
-    ON_TRACK_WEIGHTING             = 0.11
-    DISTANCE_FROM_CENTRE_WEIGHTING = 0.05
-    DIRECTION_WEIGHTING            = 0.09
-    STEERING_WEIGHTING             = 0.09
+    ON_TRACK_WEIGHTING             = 0.14
+    DISTANCE_FROM_CENTRE_WEIGHTING = 0.12
+    CONTOLLED_SPEED_WEIGHTING      = 0.15
+    STEERING_WEIGHTING             = 0.10
     THROTTLING_WEIGHTING           = 0.11
-    KEEP_LEFT_WEIGHTING            = 0.02
+    KEEP_LEFT_WEIGHTING            = 0.01
     PROGRESS_WEIGHTING             = 0.37
-    SPEED_WEIGHTING                = 0.16
 
     # Read input variables
     all_wheels_on_track = params['all_wheels_on_track']
@@ -70,18 +69,16 @@ def reward_function(params):
             reward = 0
         return reward
     
-    def direction_reward(waypoints, closest_waypoints, heading):
-        next_point = waypoints[closest_waypoints[1]]
+    def controlled_curve_speed_reward(waypoints, closest_waypoints, heading):
         prev_point = waypoints[closest_waypoints[0]]
-        direction = math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0])
-        direction = math.degrees(direction)
-        direction_diff = abs(direction - heading)
+        next_point = waypoints[closest_waypoints[1]]
+        track_direction = math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0])
+        direction_diff = abs(params['heading'] - (track_direction * 180.0 / math.pi))
 
-        # Find the absolute difference between the track direction and the car's heading
-        direction_diff = abs(params['heading'] - direction)
-        # Use a nonlinear penalty for direction difference. The larger the difference, the smaller the reward.
-        reward = 1.0 - (direction_diff / 180.0)  # normalized to [0, 1]
-        print("direction_reward: {}".format(reward))
+        if direction_diff > 15 and params['speed'] > 3: # incentivize reduced speed at tight bends
+            reward = 0.5
+        else:
+            reward = 1.0
         return reward
     
     def on_track_reward(all_wheels_on_track):
@@ -125,24 +122,14 @@ def reward_function(params):
         print("progress_reward: {}".format(reward))
         return reward
     
-    def speed_reward(speed):
-        MAX_SPEED = 4.0
-        normalized_speed = (speed / MAX_SPEED)**2 # Quadratic function accounting for more effect per unit change in speed
-
-        # Ensure the normalized speed is capped at 1.0 in case we quote the max speed wrongly
-        reward = min(1.0, normalized_speed)
-        print("speed_reward: {}".format(reward))
-        return normalized_speed
-    
     reward = 0
     reward += ON_TRACK_WEIGHTING             * on_track_reward(all_wheels_on_track)
     reward += DISTANCE_FROM_CENTRE_WEIGHTING * distance_from_center_of_road_reward(track_width, distance_from_center)
-    reward += DIRECTION_WEIGHTING            * direction_reward(waypoints, closest_waypoints, heading)
+    reward += CONTOLLED_SPEED_WEIGHTING      * controlled_curve_speed_reward(waypoints, closest_waypoints, heading)
     reward += STEERING_WEIGHTING             * steering_reward(steering_angle)
     reward += THROTTLING_WEIGHTING           * throttling_reward(steering_angle, speed)
     reward += PROGRESS_WEIGHTING             * progress_reward(progress, steps)
     reward += KEEP_LEFT_WEIGHTING            * keep_left_reward(is_left_of_center)
-    reward += SPEED_WEIGHTING                * speed_reward(speed)
 	
     return float(reward)
 
