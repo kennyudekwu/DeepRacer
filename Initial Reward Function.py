@@ -1,3 +1,6 @@
+# Imports
+import math
+
 def reward_function(params):
     '''
     In @params object
@@ -27,9 +30,7 @@ def reward_function(params):
         "waypoints": [(float, float), ]        # list of (x,y) as milestones along the track center
     }
     '''
-    # Imports
-    import math
-
+    
     # Define Weightings
     ON_TRACK_WEIGHTING             = 0.11
     DISTANCE_FROM_CENTRE_WEIGHTING = 0.05
@@ -42,8 +43,6 @@ def reward_function(params):
 
     # Read input variables
     all_wheels_on_track = params['all_wheels_on_track']
-    x = params['x']
-    y = params['y']
     closest_waypoints = params['closest_waypoints']
     distance_from_center = params['distance_from_center']
     is_left_of_center = params['is_left_of_center']
@@ -127,7 +126,7 @@ def reward_function(params):
         return reward
     
     def speed_reward(speed):
-        MAX_SPEED = 5.0
+        MAX_SPEED = 4.0
         normalized_speed = (speed / MAX_SPEED)**2 # Quadratic function accounting for more effect per unit change in speed
 
         # Ensure the normalized speed is capped at 1.0 in case we quote the max speed wrongly
@@ -176,5 +175,5 @@ test_state = {
     "track_width": 1.3,                             # width of the track
     "waypoints": [(10.3, 12.4), (5.1, 6.4)]         # list of (x,y) as milestones along the track center
 }
- 
+
 print("End reward: {}".format(reward_function(test_state)))
