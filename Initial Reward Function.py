@@ -27,56 +27,33 @@ def reward_function(params):
         "waypoints": [(float, float), ]        # list of (x,y) as milestones along the track center
     }
     '''
-    
     # Imports
     import math
 
     # Define Weightings
-    ON_TRACK_WEIGHTING             = 0.13
-    DISTANCE_FROM_CENTRE_WEIGHTING = 0.04
-    STRAIGHT_LINE_WEIGHTING        = 0.07
-    DIRECTION_WEIGHTING            = 0.07
-    STEERING_WEIGHTING             = 0.04
+    ON_TRACK_WEIGHTING             = 0.11
+    DISTANCE_FROM_CENTRE_WEIGHTING = 0.05
+    DIRECTION_WEIGHTING            = 0.09
+    STEERING_WEIGHTING             = 0.09
     THROTTLING_WEIGHTING           = 0.11
-    KEEP_LEFT_WEIGHTING            = 0.04
-    PROGRESS_WEIGHTING             = 0.36
-    SPEED_WEIGHTING                = 0.14
-    COLLISION_WEIGHTING            = 0
-    
+    KEEP_LEFT_WEIGHTING            = 0.02
+    PROGRESS_WEIGHTING             = 0.37
+    SPEED_WEIGHTING                = 0.16
 
     # Read input variables
     all_wheels_on_track = params['all_wheels_on_track']
     x = params['x']
     y = params['y']
-    _, next_object_index = params['closest_objects']
     closest_waypoints = params['closest_waypoints']
     distance_from_center = params['distance_from_center']
-    # is_crashed = params['is_crashed']
     is_left_of_center = params['is_left_of_center']
-    # is_offtrack = params['is_offtrack']
-    # is_reversed = params['is_reversed']
     heading = params['heading']
-    # objects_distance = params['objects_distance']
-    # objects_heading = params['objects_heading']
-    objects_left_of_center = params['objects_left_of_center']
-    objects_location = params['objects_location']
-    # objects_speed = params['objects_speed']
     progress = params['progress']
     speed = params['speed']
     steering_angle = params['steering_angle']
     steps = params['steps']
-    # track_length = params['track_length']
     track_width = params['track_width']
     waypoints = params['waypoints']
-    
-    
-    def on_track_reward(all_wheels_on_track):
-        if not all_wheels_on_track:
-            reward = 0.001 # Minimum Reward
-        else:
-            reward = 1.0 # Maximum Reward
-        print("on_track_reward: {}".format(reward))
-        return reward
     
     
     def distance_from_center_of_road_reward(track_width, distance_from_center):
@@ -89,68 +66,58 @@ def reward_function(params):
             # Fixed reward staying in middle
             reward = 1.0
         elif distance_from_center <= TRACK_BOUNDARY:
-            # Parabolic function
-            reward = - 6.25 * (distance_from_center/track_width - 0.1)**2 + 1
-        else:
-            # Zero reward if off track
-            reward = 0  # likely crashed/ close to off track
-        print("distance_from_center_of_road_reward: {}".format(reward))
-        return reward
-        
-    def straight_line_reward(steering_angle, speed):
-        if abs(steering_angle) < 10 and speed > 4:
-            reward = 1.0
-        elif abs(steering_angle) < 20 and speed > 3:
-            reward = 0.6
+            reward = 1.0 - (distance_from_center / TRACK_BOUNDARY)
         else:
             reward = 0
-        print("straight_line_reward: {}".format(reward))
         return reward
-        
     
     def direction_reward(waypoints, closest_waypoints, heading):
-        DIRECTION_THRESHOLD = 10.0
         next_point = waypoints[closest_waypoints[1]]
         prev_point = waypoints[closest_waypoints[0]]
         direction = math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0])
         direction = math.degrees(direction)
         direction_diff = abs(direction - heading)
 
-        # Penalize if the difference is too large
-        if direction_diff > DIRECTION_THRESHOLD:
-            reward = 0
-        else:
-            reward = 1
+        # Find the absolute difference between the track direction and the car's heading
+        direction_diff = abs(params['heading'] - direction)
+        # Use a nonlinear penalty for direction difference. The larger the difference, the smaller the reward.
+        reward = 1.0 - (direction_diff / 180.0)  # normalized to [0, 1]
         print("direction_reward: {}".format(reward))
+        return reward
+    
+    def on_track_reward(all_wheels_on_track):
+        if not all_wheels_on_track:
+            reward = 0.01 # Minimum Reward
+        else:
+            reward = 1.0 # Maximum Reward
+        print("on_track_reward: {}".format(reward))
         return reward
         
     def steering_reward(steering_angle):
-        # Penalize reward if the car is steering too much (your action space will matter)
-        ABS_STEERING_THRESHOLD = 30
-        if abs(steering_angle) > ABS_STEERING_THRESHOLD:
-            reward = 0
-        else:
-            reward = 1.0
+        # Penalize reward the car is steering too much (your action space will matter)
+        ABS_STEERING_THRESHOLD = 30 # This should be the maximum absolute value from your action space.
+        steering_penalty = abs(steering_angle) / ABS_STEERING_THRESHOLD
+        reward = 1.0 - steering_penalty
         print("steering_reward: {}".format(reward))
         return reward
         
-    def throttling_reward(steering_angle, speed):
-        THROTTLING_PARAM = 0.1
-        if speed + THROTTLING_PARAM * abs(steering_angle) < 3.0:
-            reward = 1.0
-        elif speed + THROTTLING_PARAM * abs(steering_angle) < 5.0:
-            reward = 0.5
-        else:
-            reward = 0
-        print("throttling_reward: {}".format(reward))
-        return reward
-    
     def keep_left_reward(is_left_of_center):
         if is_left_of_center:
             reward = 1.0
         else:
             reward = 0.0
         print("keep_left_reward: {}".format(reward))
+        return reward
+
+    def throttling_reward(steering_angle, speed):
+        THROTTLING_PARAM = 0.1
+        if speed + THROTTLING_PARAM * abs(steering_angle) < 4.0:
+            reward = 1.0
+        elif speed + THROTTLING_PARAM * abs(steering_angle) < 5.0:
+            reward = 0.5
+        else:
+            reward = 0
+        print("throttling_reward: {}".format(reward))
         return reward
     
     def progress_reward(progress, steps):
@@ -160,36 +127,23 @@ def reward_function(params):
         return reward
     
     def speed_reward(speed):
-        reward = (speed/5)**2
+        MAX_SPEED = 5.0
+        normalized_speed = (speed / MAX_SPEED)**2 # Quadratic function accounting for more effect per unit change in speed
+
+        # Ensure the normalized speed is capped at 1.0 in case we quote the max speed wrongly
+        reward = min(1.0, normalized_speed)
         print("speed_reward: {}".format(reward))
-        return reward
-        
-    def collision_reward(objects_location, objects_left_of_center, next_object_index, x, y):
-        reward = 1.0
-        next_object_loc = objects_location[next_object_index]
-        distance_closest_object = math.sqrt((x - next_object_loc[0])**2 + (y - next_object_loc[1])**2)
-        is_same_lane = objects_left_of_center[next_object_index] == is_left_of_center
-        if is_same_lane:
-            if 0.5 <= distance_closest_object < 0.8:
-                reward *= 0.5
-            elif 0.3 <= distance_closest_object < 0.5:
-                reward *= 0.2
-            elif distance_closest_object < 0.3:
-                reward = 1e-3  # Likely crashed
-        print("collision_reward: {}".format(reward))
-        return reward
+        return normalized_speed
     
     reward = 0
     reward += ON_TRACK_WEIGHTING             * on_track_reward(all_wheels_on_track)
     reward += DISTANCE_FROM_CENTRE_WEIGHTING * distance_from_center_of_road_reward(track_width, distance_from_center)
-    reward += STRAIGHT_LINE_WEIGHTING        * straight_line_reward(steering_angle, speed)
     reward += DIRECTION_WEIGHTING            * direction_reward(waypoints, closest_waypoints, heading)
     reward += STEERING_WEIGHTING             * steering_reward(steering_angle)
     reward += THROTTLING_WEIGHTING           * throttling_reward(steering_angle, speed)
-    reward += KEEP_LEFT_WEIGHTING            * keep_left_reward(is_left_of_center)
     reward += PROGRESS_WEIGHTING             * progress_reward(progress, steps)
+    reward += KEEP_LEFT_WEIGHTING            * keep_left_reward(is_left_of_center)
     reward += SPEED_WEIGHTING                * speed_reward(speed)
-    reward += COLLISION_WEIGHTING            * collision_reward(objects_location, objects_left_of_center, next_object_index, x, y)
 	
     return float(reward)
 
@@ -217,7 +171,7 @@ test_state = {
     "progress": 50.2,                               # percentage of track completed
     "speed": 5,                                     # agent's speed in meters per second (m/s)
     "steering_angle": 21,                           # agent's steering angle in degrees
-    "steps": 0,                                 # number steps completed
+    "steps": 0,                                     # number steps completed
     "track_length": 35.2,                           # track length in meters.
     "track_width": 1.3,                             # width of the track
     "waypoints": [(10.3, 12.4), (5.1, 6.4)]         # list of (x,y) as milestones along the track center
