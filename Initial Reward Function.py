@@ -127,7 +127,7 @@ def reward_function(params):
         return reward
     
     def speed_reward(speed):
-        MAX_SPEED = 5.0
+        MAX_SPEED = 4.0
         normalized_speed = (speed / MAX_SPEED)**2 # Quadratic function accounting for more effect per unit change in speed
 
         # Ensure the normalized speed is capped at 1.0 in case we quote the max speed wrongly
