@@ -32,11 +32,11 @@ def reward_function(params):
     '''
     
     # Define Weightings
-    ON_TRACK_WEIGHTING             = 0.10
+    ON_TRACK_WEIGHTING             = 0.15
     DISTANCE_FROM_CENTRE_WEIGHTING = 0.13
     CONTOLLED_SPEED_WEIGHTING      = 0.10
-    SPEED_WEIGHTING                = 0.22
-    PROGRESS_WEIGHTING             = 0.35
+    SPEED_WEIGHTING                = 0.26
+    PROGRESS_WEIGHTING             = 0.36
 
     # Read input variables
     all_wheels_on_track = params['all_wheels_on_track']
