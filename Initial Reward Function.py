@@ -34,8 +34,8 @@ def reward_function(params):
     # Define Weightings
     ON_TRACK_WEIGHTING             = 0.15
     DISTANCE_FROM_CENTRE_WEIGHTING = 0.13
-    CONTOLLED_SPEED_WEIGHTING      = 0.10
-    SPEED_WEIGHTING                = 0.26
+    CONTOLLED_SPEED_WEIGHTING      = 0.23
+    SPEED_WEIGHTING                = 0.13
     PROGRESS_WEIGHTING             = 0.36
 
     # Read input variables
@@ -80,7 +80,7 @@ def reward_function(params):
     
     def speed_reward(speed):
         MAX_SPEED = 4
-        reward = speed/MAX_SPEED
+        reward = (speed/MAX_SPEED)**2
         print("speed_reward: {}".format(reward))
         return reward
     
