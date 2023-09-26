@@ -31,11 +31,15 @@ def reward_function(params):
     }
     '''
     
+    # Imports
+import math
+
+def reward_function(params):
     # Define Weightings
     ON_TRACK_WEIGHTING             = 0.15
     DISTANCE_FROM_CENTRE_WEIGHTING = 0.13
-    CONTOLLED_SPEED_WEIGHTING      = 0.29
-    SPEED_WEIGHTING                = 0.07
+    CONTOLLED_SPEED_WEIGHTING      = 0.10
+    SPEED_WEIGHTING                = 0.26
     PROGRESS_WEIGHTING             = 0.36
 
     # Read input variables
@@ -72,7 +76,7 @@ def reward_function(params):
         track_direction = math.degrees(math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0]))
         direction_diff = abs(heading - (track_direction * 180.0 / math.pi))
 
-        if direction_diff > 15 and speed > 3: # incentivize throttling at tight bends
+        if direction_diff > 15 and speed > 3: # incentivize throttling at tight bends
             reward = 0.6
         else:
             reward = 1.0
@@ -80,7 +84,7 @@ def reward_function(params):
     
     def speed_reward(speed):
         MAX_SPEED = 4
-        reward = (speed/MAX_SPEED)**2
+        reward = speed/MAX_SPEED
         print("speed_reward: {}".format(reward))
         return reward
     
