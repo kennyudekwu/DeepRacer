@@ -34,8 +34,8 @@ def reward_function(params):
     # Define Weightings
     ON_TRACK_WEIGHTING             = 0.15
     DISTANCE_FROM_CENTRE_WEIGHTING = 0.13
-    CONTOLLED_SPEED_WEIGHTING      = 0.23
-    SPEED_WEIGHTING                = 0.13
+    CONTOLLED_SPEED_WEIGHTING      = 0.29
+    SPEED_WEIGHTING                = 0.07
     PROGRESS_WEIGHTING             = 0.36
 
     # Read input variables
