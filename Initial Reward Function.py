@@ -31,10 +31,6 @@ def reward_function(params):
     }
     '''
     
-# Imports
-import math
-
-def reward_function(params):
     # Define Weightings
     ON_TRACK_WEIGHTING             = 0.05 # REDUCE 
     DISTANCE_FROM_CENTRE_WEIGHTING = 0.10
