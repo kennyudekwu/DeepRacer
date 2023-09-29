@@ -31,29 +31,38 @@ def reward_function(params):
     }
     '''
     
-    # Imports
+# Imports
 import math
 
 def reward_function(params):
     # Define Weightings
-    ON_TRACK_WEIGHTING             = 0.15
-    DISTANCE_FROM_CENTRE_WEIGHTING = 0.13
-    CONTOLLED_SPEED_WEIGHTING      = 0.10
-    SPEED_WEIGHTING                = 0.26
-    PROGRESS_WEIGHTING             = 0.36
+    ON_TRACK_WEIGHTING             = 0.05 # REDUCE 
+    DISTANCE_FROM_CENTRE_WEIGHTING = 0.10
+    CONTOLLED_SPEED_WEIGHTING      = 0.05
+    SPEED_WEIGHTING                = 0.35
+    PROGRESS_WEIGHTING             = 0.45
 
     # Read input variables
     all_wheels_on_track = params['all_wheels_on_track']
     closest_waypoints = params['closest_waypoints']
     distance_from_center = params['distance_from_center']
+    steps = params["steps"]
+    progress = params["progress"]
     heading = params['heading']
-    progress = params['progress']
     speed = params['speed']
-    steps = params['steps']
     track_width = params['track_width']
     waypoints = params['waypoints']
+    is_crashed = params['is_crashed']
+    is_offtrack = params['is_offtrack']
     
-    
+    def progress_reward(all_wheels_on_track, steps, speed, progress):
+        if all_wheels_on_track and steps > 0:
+            reward = ((progress / steps) * 100) + (speed**2)
+        else:
+            reward = 0.01
+            
+        return max(1, float(reward))
+
     def distance_from_center_of_road_reward(track_width, distance_from_center):
         # Middle Track Band and Track Boundary
         MIDDLE_TRACK_BAND = 0.1 * track_width
@@ -96,19 +105,16 @@ def reward_function(params):
         print("on_track_reward: {}".format(reward))
         return reward
     
-    def progress_reward(progress, steps):
-        PROGRESSION_RATE = 0.05
-        reward = (progress/100)**2 * (1/(PROGRESSION_RATE * math.log(steps + 1) + 1))
-        print("progress_reward: {}".format(reward))
-        return reward
-    
     reward = 0
     reward += ON_TRACK_WEIGHTING             * on_track_reward(all_wheels_on_track)
     reward += DISTANCE_FROM_CENTRE_WEIGHTING * distance_from_center_of_road_reward(track_width, distance_from_center)
     reward += CONTOLLED_SPEED_WEIGHTING      * controlled_curve_speed_reward(waypoints, closest_waypoints, heading, speed)
-    reward += PROGRESS_WEIGHTING             * progress_reward(progress, steps)
     reward += SPEED_WEIGHTING                * speed_reward(speed)
+    reward += PROGRESS_WEIGHTING             * progress_reward(all_wheels_on_track, steps, speed, progress)
 	
+    # model should not get any reward at all if crashed or not on track
+    if is_crashed or is_offtrack:
+        return 0
     return float(reward)
 
 ########    
